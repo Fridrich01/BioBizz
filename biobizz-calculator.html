@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioBizz Nutrient Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #1a472a;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2d5a3d;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #2d5a3d 0%, #3a7049 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(45, 90, 61, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .results h2 {
+            color: #1a472a;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        
+        .nutrient-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #2d5a3d;
+        }
+        
+        .nutrient-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .nutrient-amount {
+            font-size: 18px;
+            color: #2d5a3d;
+            font-weight: 700;
+        }
+        
+        .note {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌿 BioBizz Calculator</h1>
+        <p class="subtitle">Calculate your nutrient doses quickly and easily</p>
+        
+        <div class="input-group">
+            <label for="water">Water Amount (Liters)</label>
+            <input type="number" id="water" min="0.1" step="0.1" placeholder="e.g., 5" value="5">
+        </div>
+        
+        <div class="input-group">
+            <label for="stage">Growth Stage</label>
+            <select id="stage">
+                <option value="seedling">Seedling (Week 1-2)</option>
+                <option value="early-veg">Early Vegetative (Week 3-4)</option>
+                <option value="late-veg">Late Vegetative (Week 5-6)</option>
+                <option value="early-flower">Early Flowering (Week 1-2)</option>
+                <option value="mid-flower">Mid Flowering (Week 3-5)</option>
+                <option value="late-flower">Late Flowering (Week 6+)</option>
+            </select>
+        </div>
+        
+        <button onclick="calculate()">Calculate Nutrients</button>
+        
+        <div class="results" id="results">
+            <h2>Your Nutrient Mix:</h2>
+            <div id="nutrient-list"></div>
+            <div class="note">
+                💡 <strong>Tip:</strong> Always pH your solution to 6.0-6.5 after mixing. Start with lower doses if you're new to these nutrients.
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // BioBizz feeding schedule (ml per liter)
+        const feedingSchedule = {
+            'seedling': {
+                bioGrow: 0.5,
+                bioBloom: 0,
+                topMax: 0,
+                calMag: 0.5
+            },
+            'early-veg': {
+                bioGrow: 2,
+                bioBloom: 0,
+                topMax: 0,
+                calMag: 1
+            },
+            'late-veg': {
+                bioGrow: 3,
+                bioBloom: 0,
+                topMax: 0.5,
+                calMag: 1
+            },
+            'early-flower': {
+                bioGrow: 2,
+                bioBloom: 2,
+                topMax: 1,
+                calMag: 1
+            },
+            'mid-flower': {
+                bioGrow: 1,
+                bioBloom: 3,
+                topMax: 2,
+                calMag: 1
+            },
+            'late-flower': {
+                bioGrow: 0,
+                bioBloom: 2,
+                topMax: 2,
+                calMag: 0.5
+            }
+        };
+        
+        function calculate() {
+            const water = parseFloat(document.getElementById('water').value);
+            const stage = document.getElementById('stage').value;
+            
+            if (!water || water <= 0) {
+                alert('Please enter a valid water amount');
+                return;
+            }
+            
+            const schedule = feedingSchedule[stage];
+            const results = {
+                'Bio Grow': (schedule.bioGrow * water).toFixed(1),
+                'Bio Bloom': (schedule.bioBloom * water).toFixed(1),
+                'Top Max': (schedule.topMax * water).toFixed(1),
+                'CalMag': (schedule.calMag * water).toFixed(1)
+            };
+            
+            let html = '';
+            for (const [name, amount] of Object.entries(results)) {
+                if (parseFloat(amount) > 0) {
+                    html += `
+                        <div class="nutrient-item">
+                            <span class="nutrient-name">${name}</span>
+                            <span class="nutrient-amount">${amount} ml</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            document.getElementById('nutrient-list').innerHTML = html;
+            document.getElementById('results').classList.add('show');
+        }
+        
+        // Allow Enter key to calculate
+        document.getElementById('water').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                calculate();
+            }
+        });
+    </script>
+</body>
+</html>
